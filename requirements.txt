@@ -1,4 +1,6 @@
 # 프로젝트 루트에서: pip install -r requirements.txt
 # MaaS Client / Server SDK (개발용 editable + pytest)
--e "./SDK/client/python/maas-client-sdk[dev]"
--e "./SDK/server/python/maas-server-sdk[dev]"
+-e "./sdk/python/client[dev]"
+-e "./sdk/python/server[dev]"
+pytest-html>=4.0
+matplotlib>=3.8

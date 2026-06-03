@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>COVESA VISS v3.1 Specification</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+    h2 { color: #555; margin-top: 30px; }
+    ul { line-height: 2; }
+    a { color: #0066cc; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .meta { color: #888; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h1>COVESA Vehicle Information Service Specification (VISS) v3.1</h1>
+  <p class="meta">Source: <a href="https://github.com/COVESA/vehicle-information-service-specification" target="_blank">github.com/COVESA/vehicle-information-service-specification</a></p>
+
+  <h2>Core Specifications</h2>
+  <ul>
+    <li><a href="VISSv3.1_Core.html">VISSv3.1 Core</a> — 핵심 스펙 (데이터 모델, 요청/응답, 접근제어)</li>
+    <li><a href="VISSv3.1_Transport.html">VISSv3.1 Transport</a> — 전송 계층 (WebSocket, HTTP, MQTT)</li>
+    <li><a href="VISSv3.1_PayloadEncoding.html">VISSv3.1 Payload Encoding</a> — 페이로드 인코딩 (JSON, Protobuf, CBOR)</li>
+  </ul>
+
+  <h2>Supplement</h2>
+  <ul>
+    <li><a href="supplement/VISS_ImplementationGuidelines.html">Implementation Guidelines</a> — 구현 가이드라인</li>
+  </ul>
+
+  <h2>Resources</h2>
+  <ul>
+    <li><a href="resources/vissv3.1-schema.json">vissv3.1-schema.json</a> — JSON Schema</li>
+    <li><a href="resources/vissv3.1.proto.txt">vissv3.1.proto</a> — Protobuf 정의</li>
+    <li><a href="resources/server.yml.txt">server.yml</a> — OpenAPI 서버 정의</li>
+    <li><a href="resources/README.md">Resources README</a></li>
+  </ul>
+</body>
+</html>

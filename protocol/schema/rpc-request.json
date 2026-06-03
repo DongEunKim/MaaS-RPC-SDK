@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "maas-rpc/rpc-request",
+  "title": "MaaS RPC Request Payload",
+  "description": "MQTT 페이로드로 전송되는 RPC 요청 JSON 스키마",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "라우팅 키. SDK가 MQTT User Property에도 자동 삽입함. Dispatcher가 핸들러 매핑에 사용.",
+      "examples": ["echo", "get_status", "set_temperature"]
+    },
+    "params": {
+      "type": "object",
+      "description": "핸들러에 전달되는 임의 파라미터 맵 (선택)",
+      "additionalProperties": true
+    }
+  },
+  "required": ["action"],
+  "additionalProperties": true,
+  "examples": [
+    {
+      "action": "echo",
+      "params": { "message": "hello" }
+    },
+    {
+      "action": "get_status"
+    }
+  ]
+}

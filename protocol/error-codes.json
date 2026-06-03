@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "MaaS RPC MQTT 5.0 Reason Code 정의. 모든 언어 SDK는 이 코드를 준수해야 한다.",
+  "version": "1.0.0",
+  "reason_codes": {
+    "0x00": {
+      "name": "Success",
+      "description": "정상 처리 완료",
+      "exception": null
+    },
+    "0x87": {
+      "name": "NotAuthorized",
+      "description": "인증/인가 실패. 요청한 VIN 또는 서비스에 대한 접근 권한 없음.",
+      "exception": "NotAuthorizedError"
+    },
+    "0x8A": {
+      "name": "ServerBusy",
+      "description": "독점 세션(패턴 E) 점유 중. 다른 클라이언트가 해당 VIN을 사용 중.",
+      "exception": "ServerBusyError"
+    },
+    "0x90": {
+      "name": "TopicNameInvalid",
+      "description": "지원하지 않는 액션(action). Dispatcher에 등록된 핸들러 없음.",
+      "exception": "UnsupportedActionError"
+    },
+    "0x99": {
+      "name": "PayloadFormatInvalid",
+      "description": "페이로드 파싱 오류. JSON 형식 불일치 또는 필수 필드 누락.",
+      "exception": "PayloadError"
+    }
+  },
+  "notes": [
+    "Reason Code는 MQTT 5.0 PUBACK의 Reason Code로 전달된다.",
+    "클라이언트는 QoS 1 PUBACK에서 Reason Code != 0x00 인 경우 해당 예외를 raise 해야 한다.",
+    "QoS 0 에서는 Reason Code를 전달할 수 없으므로 응답 페이로드의 error 필드를 사용한다."
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "MaaS RPC MQTT 5.0 토픽 패턴 명세. 모든 언어 SDK는 이 패턴을 준수해야 한다.",
+  "version": "1.0.0",
+  "patterns": {
+    "request": {
+      "pattern": "WMT/{thing_type}/{service}/{vin}/{client_id}/request",
+      "direction": "client → broker → server",
+      "qos": [0, 1],
+      "description": "클라이언트가 서버로 보내는 RPC 요청 토픽",
+      "fields": {
+        "thing_type": "장비 유형 식별자 (예: vehicle, device)",
+        "service": "서비스 이름 (예: navigation, climate)",
+        "vin": "차량/장비 고유 식별자",
+        "client_id": "MQTT 클라이언트 ID"
+      }
+    },
+    "response": {
+      "pattern": "WMO/{thing_type}/{service}/{vin}/{client_id}/response",
+      "direction": "server → broker → client",
+      "qos": [0, 1],
+      "description": "서버가 클라이언트로 보내는 RPC 응답 토픽"
+    },
+    "event": {
+      "pattern": "WMO/{thing_type}/{service}/{vin}/{client_id}/event",
+      "direction": "server → broker → client",
+      "qos": [1],
+      "description": "스트리밍 RPC에서 서버가 연속으로 보내는 이벤트 토픽 (패턴 C)"
+    }
+  },
+  "subscriptions": {
+    "client_wildcard_response": {
+      "pattern": "WMO/+/+/+/{client_id}/response",
+      "description": "클라이언트가 연결 시 구독하는 와일드카드 응답 토픽. Correlation Data로 요청을 매핑."
+    },
+    "client_wildcard_event": {
+      "pattern": "WMO/+/+/+/{client_id}/event",
+      "description": "클라이언트가 연결 시 구독하는 와일드카드 이벤트 토픽."
+    },
+    "server_wildcard_request": {
+      "pattern": "WMT/{thing_type}/{service}/{vin}/+/request",
+      "description": "서버가 구독하는 와일드카드 요청 토픽. + 는 임의 ClientId."
+    }
+  },
+  "mqtt5_properties": {
+    "response_topic": "응답을 받을 WMO 토픽 (MQTT 5.0 Response Topic Property)",
+    "correlation_data": "요청-응답 매핑을 위한 UUID bytes (MQTT 5.0 Correlation Data Property)",
+    "user_property": {
+      "action": "라우팅 키. Dispatcher가 @server.action 핸들러 매핑에 사용.",
+      "is_eof": "스트리밍 종료 마커. 'true' 이면 마지막 이벤트."
+    },
+    "message_expiry_interval": "QoS 1 요청의 만료 시간 (초). max(1, ceil(timeout)) 으로 설정."
+  }
+}

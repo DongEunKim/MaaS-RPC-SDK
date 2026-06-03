@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "maas-server-sdk"
+version = "1.0.0"
+description = "MaaS MQTT 5.0 RPC 서비스 서버 SDK"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+dependencies = [
+    "paho-mqtt>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.23",
+]
+aws = [
+    "awsiotsdk>=1.20.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["maas_server"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

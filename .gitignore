@@ -26,3 +26,14 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# 로컬 AI 어시스턴트 도구·개인 메모 (원격 미추적)
+/CLAUDE.md
+/.claude/
+/TODO.md
+
+# GitHub 자동화 (원격 미추적)
+/.github/
+
+# 테스트 리포트 빌드 산출물
+reports/
