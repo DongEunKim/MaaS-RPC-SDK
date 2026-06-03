@@ -2,6 +2,11 @@
 
 > 문서 유형: 개념설계서
 > 독자: 모든 개발자 (신규 합류 포함)
+> 이 문서의 위치: `README` → `docs/README`(문서 지도) → **본 문서** → 깊은 개념·사양·API 문서
+>
+> 본 문서는 시스템의 **멘탈 모델을 한 번에 세우고**, 그다음 어느 문서로 갈지 안내하는 허브다.
+> 설치 방법(→ `README`), 실행 가능한 API(→ SDK README·examples), 내부 자료구조(→ 상세설계사양서)는
+> 담지 않고 해당 문서로 연결한다.
 
 ---
 
@@ -18,35 +23,13 @@
  maas-client-sdk                                              maas-server-sdk
 ```
 
-### 클라이언트 측 5줄 요약
+### 양쪽의 개념 흐름
 
-```python
-from maas_client import MaasClient
+- **클라이언트**: 접속 정보와 대상(`ThingType`/`Service`/`VIN`)으로 SDK를 만들고 연결한 뒤, `call(action, params)`로 호출하면 결과를 돌려받는다. 토픽·상관관계 식별자·응답 라우팅은 SDK가 숨긴다.
+- **서버**: `action` 이름에 핸들러를 등록(`@server.action`)하고 실행하면, SDK가 들어온 요청을 해당 핸들러로 라우팅하고 반환값을 응답 토픽으로 자동 발행한다.
 
-client = MaasClient(
-    endpoint="mqtt.example.com",
-    client_id="my-client",
-    thing_type="CGU", service="viss", vin="VIN-001",
-)
-client.connect()
-result = client.call("get", {"path": "Vehicle.Speed"})   # RPC 호출
-client.disconnect()
-```
-
-### 서버 측 5줄 요약
-
-```python
-from maas_server import MaasServer, RpcContext
-
-server = MaasServer(thing_type="CGU", service_name="viss", vin="VIN-001",
-                    endpoint="mqtt.example.com")
-
-@server.action("get")
-def get_datapoint(ctx: RpcContext):
-    return {"value": 42.0}
-
-server.run()   # 블로킹
-```
+> 실행 가능한 전체 예제와 API 시그니처는 [클라이언트 SDK README](../sdk/python/client/README.md) ·
+> [서버 SDK README](../sdk/python/server/README.md) · [examples](../examples/python/README.md) 참고.
 
 ### 토픽 패턴 한눈에 보기
 
@@ -61,11 +44,16 @@ server.run()   # 블로킹
 
 ## 2. 문서 목적 및 범위
 
-본 문서는 MaaS RPC 프레임워크의 **개념·원칙·설계 배경**을 정의한다.
+본 문서는 MaaS RPC 프레임워크의 **개념·원칙·설계 배경**을 정의하고, 깊은 문서로의 진입점 역할을 한다.
 
 - 대상 독자: 신규 개발자, 아키텍트, 연동 담당자
-- 포함 내용: 설계 배경, 핵심 원칙, 개념 아키텍처, 메커니즘 개요, RPC 패턴 요약
-- 제외 내용: API 상세 명세(→ SDK README), 구현 내부 구조(→ SDK 상세설계사양서)
+- 포함 내용: 설계 배경, 핵심 원칙, 개념 아키텍처, 메커니즘 *개념*, RPC 패턴 요약, 다음 읽을 문서 안내
+- 제외 내용(각 주인 문서로 연결):
+  - 설치·저장소 구조 → [README](../README.md)
+  - API 상세 명세·실행 코드 → SDK README, examples
+  - 패턴별 시퀀스 다이어그램 → [RPC_DESIGN.md](RPC_DESIGN.md)
+  - 토픽·ACL·Reason Code 규격 → [TOPIC_AND_ACL_SPEC.md](TOPIC_AND_ACL_SPEC.md)
+  - 내부 구현 구조·자료구조 → [SDK 상세설계사양서](spec/SDK%20%EC%83%81%EC%84%B8%EC%84%A4%EA%B3%84%EC%82%AC%EC%96%91%EC%84%9C.md)
 
 ---
 
@@ -98,8 +86,8 @@ MQTT 5.0은 메시지에 추가 메타데이터를 붙이는 **Properties** 기�
 | **토픽 은닉** | 애플리케이션 코드는 WMT/WMO 전체 경로를 몰라도 된다. SDK가 자동 생성 |
 | **단일 구독** | 클라이언트는 `WMO/+/+/+/{ClientId}/response` 단 1개만 구독. 모든 응답(단일·스트리밍)을 이 토픽으로 수신 |
 | **Clean Start = True** | 재연결 시 stale 응답이 클라이언트에 도달하는 것을 방지 |
-| **동기 우선** | `MaasClient`(동기 Facade)가 기본. asyncio 환경은 `MaasClientAsync` |
-| **어댑터 추상화** | 서버 SDK는 `MqttClientAdapter` Protocol로 paho-mqtt(CCU)와 Greengrass IPC(CGU)를 교체 가능하게 지원 |
+| **동기 우선** | 동기 Facade가 기본. asyncio 환경용 비동기 클래스도 제공 |
+| **어댑터 추상화** | 서버 SDK는 전송 계층을 어댑터로 추상화해 paho-mqtt(CCU)와 Greengrass IPC(CGU)를 교체 가능하게 지원 |
 
 ---
 
@@ -116,9 +104,9 @@ graph LR
     end
 
     subgraph 엣지 영역
-        CGU[CGU RPC Server\nGreengrassIpcAdapter]
+        CGU[CGU RPC Server\nGreengrass IPC 어댑터]
         EMQX[CGU 로컬 브로커\nEMQX]
-        CCU[CCU RPC Server\nPahoMqttAdapter]
+        CCU[CCU RPC Server\npaho-mqtt 어댑터]
     end
 
     C -- "WSS + JWT" --> B
@@ -129,16 +117,22 @@ graph LR
 
 ### 두 가지 엣지 서버 시나리오
 
+전송 계층만 다르고 **서비스 구현 코드(핸들러 등록·실행)는 동일**하다는 것이 핵심이다.
+
 | 항목 | CGU (Greengrass Component) | CCU (Client Device) |
 |------|---------------------------|---------------------|
 | 연결 방식 | Greengrass IPC (Unix Socket) | paho-mqtt → EMQX (mTLS) |
-| SDK 어댑터 | `GreengrassIpcAdapter` | `PahoMqttAdapter` |
-| `@server.action` 코드 | **동일** | **동일** |
-| `server.run()` | **동일** | **동일** |
+| 전송 계층 | Greengrass IPC 어댑터 | paho-mqtt 어댑터 |
+| 서비스 핸들러 코드 | **동일** | **동일** |
+
+> 어댑터를 코드에서 어떻게 선택하는지는 [서버 SDK README](../sdk/python/server/README.md) 참고.
 
 ---
 
 ## 6. 핵심 메커니즘 개요
+
+세부 시퀀스·예외 흐름은 [RPC_DESIGN.md](RPC_DESIGN.md), 토픽·Property 규격은
+[TOPIC_AND_ACL_SPEC.md](TOPIC_AND_ACL_SPEC.md)에 있다. 여기서는 개념만 본다.
 
 ### 6.1 WMT/WMO 토픽 체계
 
@@ -163,15 +157,15 @@ graph LR
 
 여러 RPC 요청이 동시에 진행 중일 때 응답이 섞이지 않도록 매핑한다.
 
-1. 요청 시 SDK가 UUID v4를 생성해 MQTT PUBLISH의 `Correlation Data` Property로 첨부
-2. 서버는 응답 PUBLISH에 동일한 UUID를 그대로 포함
-3. 클라이언트 SDK가 UUID로 `_pending` 맵(dict[bytes, asyncio.Future])에서 대기 중인 Future를 찾아 resolve
+1. 요청 시 SDK가 고유 식별자(UUID)를 생성해 요청 메시지의 `Correlation Data` Property로 첨부한다.
+2. 서버는 응답 메시지에 동일한 식별자를 그대로 포함한다.
+3. 클라이언트 SDK는 동일 식별자로 대기 중인 요청을 찾아 해당 응답으로 매칭한다.
 
-개발자가 직접 UUID를 관리할 필요가 없다.
+개발자가 직접 식별자를 관리할 필요가 없다. (대기 자료구조 등 구현 방식은 상세설계사양서 참고.)
 
 ### 6.3 Response Topic 기반 라우팅
 
-클라이언트가 요청 PUBLISH의 `Response Topic` Property에 응답 받을 토픽을 명시한다.
+클라이언트가 요청 메시지의 `Response Topic` Property에 응답 받을 토픽을 명시한다.
 
 - 서버는 MQTT 5.0 Property에서 `Response Topic`을 읽어 응답을 발행한다.
 - 페이로드 안에 응답 주소를 넣지 않으므로 페이로드 구조가 단순하다.
@@ -183,53 +177,40 @@ graph LR
 
 | 패턴 | 이름 | QoS | 핵심 특징 |
 |------|------|-----|-----------|
-| A | Liveness | 0 | 빠른 상태 조회. Message Expiry 생략 |
-| B | Reliable | 1 | 하드웨어 제어 등 결과 보장 필요 명령 |
-| C | Streaming | 1 | 서버가 response 토픽으로 청크를 N번 발행. `is_EOF=true`로 종료 |
-| D | Time-bound | 1 | SDK가 `timeout` 값을 `Message Expiry Interval`에 자동 동기화 |
-| E | Exclusive | 1 | VIN별 Lock. 다른 클라이언트 요청 시 `0x8A(Server Busy)` 반환. 단절 시 자동 해제 |
+| A | Best-Effort 조회 | 0 | 빠른 상태 조회. Message Expiry 생략. 유실 시 재시도 가능 |
+| B | 신뢰성 제어 | 1 | 하드웨어 제어 등 결과 보장 명령. 재전송 보장 |
+| C | 스트리밍 구독 | 0 (서버가 1 선택 가능) | 패턴 A와 동일한 요청 형태. 서버가 `is_EOF=false`로 스트림 선언. 유한·무한 모두 지원. 클라이언트 취소·서버 강제 취소·자연 종료 |
+| D | 시한성 제어 | 1 | `valid_for` 유효기간 초과 시 **미실행 보장** (요청 Message Expiry 자동 설정) |
+| E | 독점 세션 | 1 | **서비스 단위** 독점. 타 클라이언트 요청 시 `0x8A(Server Busy)` 반환. 단절 시 LWT로 자동 해제 |
 
-자세한 내용은 [RPC_DESIGN.md](RPC_DESIGN.md) 참고.
+패턴별 시퀀스·전제/사후조건·예외 흐름은 [RPC_DESIGN.md](RPC_DESIGN.md) 참고. (큐 선점용 패턴 G는 예약 — 현재 구현 범위 밖.)
 
 ---
 
 ## 8. SDK 구성 및 역할
 
-### 8.1 maas-client-sdk
+| SDK | 역할 | 비고 |
+|-----|------|------|
+| **maas-client-sdk** | RPC를 **호출하는** 쪽. 웹 앱, 관리 도구, 테스트 스크립트 등 | 동기 Facade가 기본, asyncio 환경용 비동기 클래스도 제공 |
+| **maas-server-sdk** | RPC를 **처리하는** 쪽. 엣지 서비스 | 전송 계층(paho-mqtt / Greengrass IPC)을 어댑터로 선택 |
 
-RPC를 **호출하는** 쪽. 웹 앱, 관리 도구, 테스트 스크립트 등에서 사용한다.
-
-| 클래스 | 환경 |
-|--------|------|
-| `MaasClient` | 일반 Python 스크립트, Flask 등 비async 환경. 내부적으로 asyncio 루프를 전용 스레드에서 운영하는 동기 Facade |
-| `MaasClientAsync` | asyncio 환경에서 직접 사용 |
-
-**이중 호출 규칙:**
-- 생성자 바인딩 시: `call(action[, params])`
-- 플릿 등 VIN이 호출마다 바뀌는 경우: `call(thing_type, service, action, vin[, params])`
-
-### 8.2 maas-server-sdk
-
-RPC를 **처리하는** 쪽. 엣지 서비스에서 사용한다.
-
-`mode` 파라미터로 전송 계층을 선택한다.
-
-| mode | 설명 |
-|------|------|
-| `"mqtt"` (기본) | `PahoMqttAdapter`. `endpoint`, `vin` 필수 |
-| `"greengrass"` | `GreengrassIpcAdapter`. `endpoint` 불필요. `vin`은 connect 후 `AWS_IOT_THING_NAME` 환경변수로 자동 취득 |
+클래스명, 생성자 인자, `call`/`stream`/세션 API, 어댑터 선택 옵션 등 구체적인 사용법은
+[클라이언트 SDK README](../sdk/python/client/README.md)와 [서버 SDK README](../sdk/python/server/README.md)에 있다.
 
 ---
 
-## 9. 관련 문서
+## 9. 다음에 무엇을 읽을까
 
-| 문서 | 내용 |
-|------|------|
-| [RPC_DESIGN.md](RPC_DESIGN.md) | 기능정의서: 패턴별 시퀀스 다이어그램, 전제·사후조건, 내부 메커니즘 |
-| [TOPIC_AND_ACL_SPEC.md](TOPIC_AND_ACL_SPEC.md) | 인터페이스 정의서: 토픽 구조, ACL, Reason Code, 인증·인가 정책 |
-| [spec/SDK 요구사양서.md](spec/SDK%20%EC%9A%94%EA%B5%AC%EC%82%AC%EC%96%91%EC%84%9C.md) | SDK 기능·비기능 요구사항 |
-| [spec/SDK 상세설계사양서.md](spec/SDK%20%EC%83%81%EC%84%B8%EC%84%A4%EA%B3%84%EC%82%AC%EC%96%91%EC%84%9C.md) | SDK 구현 아키텍처, 자료구조, 어댑터 패턴 |
-| [references/sdm/04. MaaS RPC 프레임워크 시스템요구사양서.md](references/sdm/04.%20MaaS%20RPC%20%ED%94%84%EB%A0%88%EC%9E%84%EC%9B%8C%ED%81%AC%20%EC%8B%9C%EC%8A%A4%ED%85%9C%EC%9A%94%EA%B5%AC%EC%82%AC%EC%96%91%EC%84%9C.md) | 상위 계층 시스템 요구사양 (참고 전용) |
-| [sdk/python/client/README.md](../sdk/python/client/README.md) | 클라이언트 SDK 설치·API |
-| [sdk/python/server/README.md](../sdk/python/server/README.md) | 서버 SDK 설치·API |
-| [examples/python/README.md](../examples/python/README.md) | 실행 가능한 예제 |
+본 문서로 멘탈 모델을 세웠다면, **목적에 따라** 아래로 이동한다.
+(문서 전체 지도와 계층은 [docs/README.md](README.md)에 있다.)
+
+| 하고 싶은 것 | 읽을 문서 |
+|---|---|
+| 패턴별 동작·시퀀스·예외 흐름을 알고 싶다 | [RPC_DESIGN.md](RPC_DESIGN.md) |
+| 토픽 구조·ACL·Reason Code·인증 정책을 확인한다 | [TOPIC_AND_ACL_SPEC.md](TOPIC_AND_ACL_SPEC.md) |
+| 연결 수명주기·재연결·세션 해제 정책을 본다 | [CONNECTION_MANAGEMENT.md](CONNECTION_MANAGEMENT.md) |
+| 클라이언트로 RPC를 호출한다 | [클라이언트 SDK README](../sdk/python/client/README.md) |
+| 엣지 서비스(서버)를 구현한다 | [서버 SDK README](../sdk/python/server/README.md) |
+| 바로 실행해 본다 | [examples](../examples/python/README.md) |
+| SDK 요구사항(공개 API 계약)을 본다 | [SDK 요구사양서](spec/SDK%20%EC%9A%94%EA%B5%AC%EC%82%AC%EC%96%91%EC%84%9C.md) |
+| 내부 구현 구조·자료구조를 본다 | [SDK 상세설계사양서](spec/SDK%20%EC%83%81%EC%84%B8%EC%84%A4%EA%B3%84%EC%82%AC%EC%96%91%EC%84%9C.md) |
